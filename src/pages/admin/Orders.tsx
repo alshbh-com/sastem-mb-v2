@@ -260,6 +260,20 @@ const Orders = () => {
     },
   });
 
+  // Moderator usernames - used by supervisor to filter orders
+  const { data: moderatorUsernames } = useQuery({
+    queryKey: ["moderator_usernames"],
+    enabled: isSupervisor,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("username")
+        .eq("role", "moderator");
+      if (error) throw error;
+      return (data || []).map((u: any) => u.username);
+    },
+  });
+
   // Products list (for moderator manual order)
   const { data: productsList } = useQuery({
     queryKey: ["products-for-manual-order"],
