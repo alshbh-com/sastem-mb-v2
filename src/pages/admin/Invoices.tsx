@@ -265,7 +265,7 @@ const Invoices = () => {
     </div>`;
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const ordersToPrint = filteredOrders?.filter(o => selectedOrders.includes(o.id));
     if (!ordersToPrint?.length) return;
 
@@ -274,13 +274,29 @@ const Invoices = () => {
     const watermarkText = selectedOffice ? (selectedOffice.watermark_name || selectedOffice.name) : invoiceName;
     const logoUrl = selectedOffice?.logo_url || null;
 
+    const [{ default: JsBarcode }, { default: QRCode }] = await Promise.all([
+      import('jsbarcode'),
+      import('qrcode'),
+    ]);
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // فاتورة واحدة فقط لكل أوردر — بدون نسخ مكررة
-    const cells: string[] = ordersToPrint.map(order =>
-      generateInvoiceCell(order, brandName, watermarkText, logoUrl)
-    );
+    // فاتورة واحدة فقط لكل أوردر — مع باركود وQR قابلين للقراءة بالمسدس
+    const cells: string[] = await Promise.all(ordersToPrint.map(async (order: any) => {
+      const code = order.tracking_code || order.barcode_value || `ORD-${order.order_number}`;
+      let barcodeSvg = '';
+      try {
+        const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        JsBarcode(svgEl, code, { format: 'CODE128', height: 45, fontSize: 12, margin: 2, displayValue: true });
+        barcodeSvg = new XMLSerializer().serializeToString(svgEl);
+      } catch (e) { console.error('barcode err', e); }
+      let qrDataUrl = '';
+      try {
+        qrDataUrl = await QRCode.toDataURL(code, { width: 140, margin: 1 });
+      } catch (e) { console.error('qr err', e); }
+      return generateInvoiceCell(order, brandName, watermarkText, logoUrl, barcodeSvg, qrDataUrl);
+    }));
 
     let pagesHTML = '';
     cells.forEach((cell, idx) => {
