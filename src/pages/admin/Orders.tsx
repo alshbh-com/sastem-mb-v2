@@ -814,6 +814,10 @@ const Orders = () => {
   };
 
   const filteredOrders = orders?.filter(order => {
+    if (isSupervisor) {
+      const creator = (order as any).created_by_username;
+      if (!creator || !moderatorUsernames?.includes(creator)) return false;
+    }
     if (statusFilter !== "all" && order.status !== statusFilter) return false;
     if (startDate || endDate) {
       const orderDate = new Date(order.created_at).toISOString().split('T')[0];
