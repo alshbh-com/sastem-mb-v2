@@ -547,12 +547,14 @@ export type Database = {
           assigned_at: string | null
           created_at: string
           created_by: string | null
+          created_by_username: string | null
           customer_id: string | null
           delivery_agent_id: string | null
           discount: number
           governorate_id: string | null
           id: string
           invoice_id: string | null
+          manual_code: string | null
           modified_amount: number | null
           notes: string | null
           order_details: string | null
@@ -560,18 +562,21 @@ export type Database = {
           shipping_cost: number
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
+          updated_at: string
         }
         Insert: {
           agent_shipping_cost?: number
           assigned_at?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_username?: string | null
           customer_id?: string | null
           delivery_agent_id?: string | null
           discount?: number
           governorate_id?: string | null
           id?: string
           invoice_id?: string | null
+          manual_code?: string | null
           modified_amount?: number | null
           notes?: string | null
           order_details?: string | null
@@ -579,18 +584,21 @@ export type Database = {
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
+          updated_at?: string
         }
         Update: {
           agent_shipping_cost?: number
           assigned_at?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_username?: string | null
           customer_id?: string | null
           delivery_agent_id?: string | null
           discount?: number
           governorate_id?: string | null
           id?: string
           invoice_id?: string | null
+          manual_code?: string | null
           modified_amount?: number | null
           notes?: string | null
           order_details?: string | null
@@ -598,6 +606,7 @@ export type Database = {
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -709,6 +718,7 @@ export type Database = {
           details: string | null
           id: string
           image_url: string | null
+          is_active: boolean
           is_offer: boolean
           name: string
           offer_price: number | null
@@ -725,6 +735,7 @@ export type Database = {
           details?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean
           is_offer?: boolean
           name: string
           offer_price?: number | null
@@ -741,6 +752,7 @@ export type Database = {
           details?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean
           is_offer?: boolean
           name?: string
           offer_price?: number | null
@@ -891,6 +903,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_old_activity_logs: { Args: never; Returns: undefined }
       login: { Args: { p_password: string; p_username: string }; Returns: Json }
       login_by_password: { Args: { p_password: string }; Returns: Json }
       reset_order_sequence: { Args: never; Returns: undefined }
@@ -905,6 +918,7 @@ export type Database = {
         | "cancelled"
         | "delivered_with_modification"
         | "agent_deleted"
+        | "return_no_shipping"
       user_role: "owner" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -1042,6 +1056,7 @@ export const Constants = {
         "cancelled",
         "delivered_with_modification",
         "agent_deleted",
+        "return_no_shipping",
       ],
       user_role: ["owner", "admin", "moderator"],
     },
