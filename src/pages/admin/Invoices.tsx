@@ -191,6 +191,10 @@ const Invoices = () => {
           <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:7px;border:1.5px solid #000;padding:5px;">
             فاتورة #${order.manual_code || order.order_number || order.id.slice(0, 8)}
             ${order.tracking_code ? `<div style="font-size:11px;font-weight:normal;margin-top:2px;">كود التتبع: ${order.tracking_code}</div>` : ''}
+            ${(barcodeSvg || qrDataUrl) ? `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;background:#fff;padding:4px;">
+              ${barcodeSvg ? `<div style="background:#fff;">${barcodeSvg}</div>` : ''}
+              ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:70px;height:70px;background:#fff;" />` : ''}
+            </div>` : ''}
           </div>
           
           <div style="font-size:14px;line-height:1.9;margin-bottom:7px;padding:6px;border:1px solid #000;">
