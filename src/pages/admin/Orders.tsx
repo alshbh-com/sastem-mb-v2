@@ -1294,40 +1294,22 @@ const Orders = () => {
                 </p>
               </div>
 
-              {(manualOrder.manualCode || manualOrder.customerName || manualOrder.phone) && (
+              {(manualOrder.manualCode || manualOrder.customerName || manualOrder.phone || manualOrder.productPrice) && (
                 <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1 border">
                   <p className="font-bold text-primary mb-1">📋 البيانات المستخرجة:</p>
                   {manualOrder.manualCode && <p>الكود: <span className="font-bold">{manualOrder.manualCode}</span></p>}
-                  {manualOrder.manualDate && <p>التاريخ: {manualOrder.manualDate}</p>}
-                  {manualOrder.accountName && <p>الاكونت: {manualOrder.accountName}</p>}
                   {manualOrder.customerName && <p>العميل: {manualOrder.customerName}</p>}
                   {manualOrder.phone && <p>الهاتف: {manualOrder.phone}</p>}
                   {manualOrder.address && <p>العنوان: {manualOrder.address}</p>}
-                  {manualOrder.productName && <p>المنتج المكتوب: {manualOrder.productName}</p>}
-                  {manualOrder.productPrice && <p>السعر (بدون شحن): {manualOrder.productPrice} ج.م</p>}
+                  {manualOrder.productName && <p>المنتج: {manualOrder.productName}</p>}
+                  {manualOrder.productColor && <p>اللون: {manualOrder.productColor}</p>}
+                  {manualOrder.productSize && <p>المقاس: {manualOrder.productSize}</p>}
+                  {manualOrder.productPrice && <p>سعر المنتج: {manualOrder.productPrice} ج.م</p>}
+                  {manualOrder.shippingCost && <p>الشحن: {manualOrder.shippingCost} ج.م</p>}
                 </div>
               )}
 
               <div className="border-t pt-3">
-                <Label>المحافظة (الشحن يُحسب تلقائياً) *</Label>
-                <Select
-                  value={manualOrder.governorateId}
-                  onValueChange={(value) => setManualOrder({ ...manualOrder, governorateId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المحافظة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {governorates?.map((gov) => (
-                      <SelectItem key={gov.id} value={gov.id}>
-                        {gov.name} - {gov.shipping_cost} ج.م
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
                 <Label>اختر المنتج من المخزون (لخصم الكمية)</Label>
                 <Select
                   value={manualOrder.productId}
@@ -1364,12 +1346,23 @@ const Orders = () => {
                 />
               </div>
 
+              <div>
+                <Label>سعر الشحن (يدوي)</Label>
+                <Input
+                  type="number"
+                  value={manualOrder.shippingCost}
+                  onChange={(e) => setManualOrder({ ...manualOrder, shippingCost: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+
               {manualOrder.productPrice && (
                 <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                  <p>سعر المنتج: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1)).toFixed(2)} ج.م</p>
-                  <p>سعر الشحن (تلقائي من المحافظة): {(governorates?.find(g => g.id === manualOrder.governorateId)?.shipping_cost || 0)} ج.م</p>
+                  <p>سعر المنتج × الكمية: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1)).toFixed(2)} ج.م</p>
+                  <p>الشحن (ثابت لا يتأثر بالكمية): {(parseFloat(manualOrder.shippingCost) || 0).toFixed(2)} ج.م</p>
                   <p className="font-bold pt-1 border-t">
-                    الإجمالي: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1) + parseFloat((governorates?.find(g => g.id === manualOrder.governorateId)?.shipping_cost || 0).toString())).toFixed(2)} ج.م
+                    الإجمالي: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1) + (parseFloat(manualOrder.shippingCost) || 0)).toFixed(2)} ج.م
                   </p>
                 </div>
               )}
@@ -1383,11 +1376,7 @@ const Orders = () => {
               <Button
                 onClick={() => {
                   if (!manualOrder.productPrice) {
-                    toast.error("لم يتم استخراج السعر — تأكد من كتابة (اجمالي السعر: ...) في النص");
-                    return;
-                  }
-                  if (!manualOrder.governorateId) {
-                    toast.error("يرجى اختيار المحافظة");
+                    toast.error("لم يتم استخراج السعر — تأكد من وجود سطر فيه (اجمالي) ورقم");
                     return;
                   }
                   createManualOrderMutation.mutate();
