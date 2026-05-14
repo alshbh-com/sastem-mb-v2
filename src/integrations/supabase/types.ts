@@ -547,6 +547,7 @@ export type Database = {
           assigned_at: string | null
           created_at: string
           created_by: string | null
+          created_by_user_id: string | null
           created_by_username: string | null
           customer_id: string | null
           delivery_agent_id: string | null
@@ -569,6 +570,7 @@ export type Database = {
           assigned_at?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_user_id?: string | null
           created_by_username?: string | null
           customer_id?: string | null
           delivery_agent_id?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           assigned_at?: string | null
           created_at?: string
           created_by?: string | null
+          created_by_user_id?: string | null
           created_by_username?: string | null
           customer_id?: string | null
           delivery_agent_id?: string | null
