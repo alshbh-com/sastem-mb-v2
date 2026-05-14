@@ -61,13 +61,13 @@ const Orders = () => {
     s.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
 
-  // parser لنص الأوردر اليدوي
+  // Smart free-form parser - يحلل نص الأوردر بأي شكل
   const parseManualOrderText = (raw: string) => {
     if (!raw || !raw.trim()) return;
-    const text = raw.replace(/[()]/g, "").trim();
+    const text = normalizeDigits(raw.replace(/[()]/g, "")).trim();
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-    const get = (keys: string[]) => {
+    const labelGet = (keys: string[]) => {
       for (const line of lines) {
         const m = line.match(/^([^:：]+)[:：](.*)$/);
         if (!m) continue;
@@ -77,49 +77,123 @@ const Orders = () => {
       return "";
     };
 
-    const code = get(["الكود", "كود"]);
-    const dateRaw = normalizeDigits(get(["التاريخ", "تاريخ"]));
-    const account = get(["الاكونت", "الأكونت", "اكونت", "أكونت", "اسم الاكونت", "اسم الأكونت"]);
-    const customer = get(["اسم العميل", "العميل"]);
-    const address = get(["العنوان", "عنوان"]);
-    const phoneRaw = normalizeDigits(get(["التليفون", "التلفون", "الموبايل", "الهاتف", "تليفون", "موبايل"]));
-    const productLine = get(["الاوردر", "الأوردر", "المنتج", "اوردر", "أوردر"]);
-    const priceLineRaw = normalizeDigits(get(["اجمالي السعر", "إجمالي السعر", "السعر", "الاجمالي", "الإجمالي", "اجمالي"]));
+    // 1) رقم الهاتف: 10-11 رقم متتالي يبدأ بـ 01
+    let phone = "";
+    let phoneLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/(01\d{9})/);
+      if (m) { phone = m[1]; phoneLineIdx = i; break; }
+    }
 
-    // التاريخ: نقبل "24/4" أو "24/4/2026" أو "2026-04-24"
-    let parsedDate = manualOrder.manualDate;
-    if (dateRaw) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
-        parsedDate = dateRaw;
-      } else {
-        const m = dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+    // 2) السعر والشحن: سطر يحتوي "اجمالي" أو "إجمالي" - يدعم 500+100
+    let productPrice = "";
+    let parsedShipping = "";
+    let priceLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/اجمال[يى]|إجمال[يى]|الاجمال|الإجمال|السعر/.test(lines[i])) {
+        const m = lines[i].match(/(\d+(?:\.\d+)?)\s*(?:\+\s*(\d+(?:\.\d+)?))?/);
         if (m) {
-          const d = m[1].padStart(2, "0");
-          const mo = m[2].padStart(2, "0");
-          let y = m[3] || String(new Date().getFullYear());
-          if (y.length === 2) y = "20" + y;
-          parsedDate = `${y}-${mo}-${d}`;
+          productPrice = m[1];
+          if (m[2]) parsedShipping = m[2];
+          priceLineIdx = i;
+          break;
         }
       }
     }
+    // fallback: سطر فيه فقط "X+Y" أو رقم لوحده
+    if (!productPrice) {
+      for (let i = 0; i < lines.length; i++) {
+        if (i === phoneLineIdx) continue;
+        const m = lines[i].match(/^(\d{2,5})\s*\+\s*(\d{1,4})$/);
+        if (m) { productPrice = m[1]; parsedShipping = m[2]; priceLineIdx = i; break; }
+      }
+    }
 
-    // السعر: لو فيه + يبقا أول رقم = سعر المنتج، الباقي شحن (هنتجاهله لأن الشحن يتحسب من المحافظة)
-    let productPrice = "";
-    if (priceLineRaw) {
-      const nums = priceLineRaw.match(/\d+(?:\.\d+)?/g);
-      if (nums && nums.length > 0) productPrice = nums[0];
+    // 3) الكود: توكن قصير حروف+أرقام (z2, bm2, ab12, 2bm)
+    let code = "";
+    let codeLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx) continue;
+      const t = lines[i].trim();
+      if (/^[a-zA-Z]{1,4}\s?\d{1,4}$/.test(t) || /^\d{1,4}\s?[a-zA-Z]{1,4}$/.test(t)) {
+        code = t.replace(/\s+/g, "");
+        codeLineIdx = i;
+        break;
+      }
+    }
+    if (!code) code = labelGet(["الكود", "كود"]);
+
+    // 4) لون / مقاس / منتج
+    const colors = ["ابيض","أبيض","اسود","أسود","احمر","أحمر","ازرق","أزرق","اخضر","أخضر","اصفر","أصفر","بني","رمادي","وردي","بيج","نيلي","كحلي","فضي","ذهبي","برتقالي","موف","تركواز"];
+    const productKeywords = /نص كم|كم طويل|كم قصير|قميص|بنطلون|بلوزة|بلوزه|فستان|تيشرت|جاكت|سرين[هة]|بيجام[هة]|شورت|طقم|بادي|بودي|اوفر|كاب|كاش|اون/;
+    const sizeRegex = /(?:^|\s)مقاس\s*([0-9a-zA-Z]+)|\b(XXXL|XXL|XL|L|M|S)\b/i;
+
+    let color = "";
+    let size = "";
+    const productParts: string[] = [];
+    const productIdxs = new Set<number>();
+
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx || i === codeLineIdx) continue;
+      const line = lines[i];
+      const foundColor = colors.find(c => line.includes(c));
+      const sm = line.match(sizeRegex);
+      if (foundColor || sm || productKeywords.test(line)) {
+        productParts.push(line);
+        productIdxs.add(i);
+        if (foundColor && !color) color = foundColor;
+        if (sm && !size) size = (sm[1] || sm[2] || "").toUpperCase();
+      }
+    }
+    const productLine = productParts.join(" ").trim();
+
+    // 5) العنوان: أطول سطر متبقي وفيه أكثر من كلمتين
+    let address = "";
+    let addressIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx || i === codeLineIdx) continue;
+      if (productIdxs.has(i)) continue;
+      const line = lines[i];
+      if (line.split(/\s+/).length >= 2 && line.length > address.length) {
+        address = line;
+        addressIdx = i;
+      }
+    }
+    if (!address) address = labelGet(["العنوان", "عنوان"]);
+
+    // 6) اسم العميل: أول سطر متبقي
+    let customerName = "";
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx || i === codeLineIdx || i === addressIdx) continue;
+      if (productIdxs.has(i)) continue;
+      customerName = lines[i];
+      break;
+    }
+    if (!customerName) customerName = labelGet(["اسم العميل", "العميل", "الاسم"]);
+
+    // 7) محاولة ربط المنتج بالمخزون
+    let productId = "";
+    if (productsList && (productLine || code)) {
+      const search = (productLine + " " + code).toLowerCase();
+      const found = productsList.find(p => {
+        const n = p.name.toLowerCase();
+        return search.includes(n) || (code && n.includes(code.toLowerCase()));
+      });
+      if (found) productId = found.id;
     }
 
     setManualOrder(prev => ({
       ...prev,
       manualCode: code || prev.manualCode,
-      manualDate: parsedDate,
-      accountName: account || prev.accountName,
-      customerName: customer || prev.customerName,
+      customerName: customerName || prev.customerName,
       address: address || prev.address,
-      phone: phoneRaw || prev.phone,
+      phone: phone || prev.phone,
       productName: productLine || prev.productName,
       productPrice: productPrice || prev.productPrice,
+      productColor: color || prev.productColor,
+      productSize: size || prev.productSize,
+      productId: productId || prev.productId,
+      shippingCost: parsedShipping !== "" ? parsedShipping : prev.shippingCost,
     }));
   };
 
