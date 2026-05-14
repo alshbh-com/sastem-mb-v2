@@ -439,8 +439,8 @@ const UserManagement = () => {
                       <Label>نوع المستخدم</Label>
                       <RadioGroup
                         value={newUser.role}
-                        onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v as 'admin' | 'moderator' }))}
-                        className="flex gap-4 mt-2"
+                        onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v as 'admin' | 'moderator' | 'supervisor' }))}
+                        className="flex flex-col gap-3 mt-2"
                       >
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="admin" id="role-admin" />
@@ -450,15 +450,24 @@ const UserManagement = () => {
                           <RadioGroupItem value="moderator" id="role-moderator" />
                           <Label htmlFor="role-moderator" className="cursor-pointer">مدريتور (تسجيل أوردرات يدوي فقط)</Label>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="supervisor" id="role-supervisor" />
+                          <Label htmlFor="role-supervisor" className="cursor-pointer">مشرف (يشوف ويعدل ويمسح أوردرات المدريتور)</Label>
+                        </div>
                       </RadioGroup>
                       {newUser.role === 'moderator' && (
                         <p className="text-xs text-primary mt-2">
                           سيظهر للمدريتور فقط نموذج إضافة أوردر يدوي داخل صفحة الأوردرات
                         </p>
                       )}
+                      {newUser.role === 'supervisor' && (
+                        <p className="text-xs text-primary mt-2">
+                          المشرف يرى فقط الأوردرات اللي سجلها المدريتور والموجودة في قسم الأوردرات (قبل تعيين مندوب)
+                        </p>
+                      )}
                     </div>
                     <Button onClick={handleCreateUser} className="w-full">
-                      {newUser.role === 'moderator' ? 'إنشاء المدريتور' : 'إنشاء وتحديد الصلاحيات'}
+                      {newUser.role === 'moderator' ? 'إنشاء المدريتور' : newUser.role === 'supervisor' ? 'إنشاء المشرف' : 'إنشاء وتحديد الصلاحيات'}
                     </Button>
                   </div>
                 </DialogContent>
