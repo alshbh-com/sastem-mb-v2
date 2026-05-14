@@ -904,7 +904,7 @@ const Orders = () => {
                   {!canEditOrders && (
                     <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">مشاهدة فقط</span>
                   )}
-                  {canEditOrders && (
+                  {canEditOrders && !isSupervisor && (
                   <Button onClick={() => setManualOrderDialogOpen(true)} size="sm" variant="outline">
                     <Plus className="ml-2 h-4 w-4" />
                     إضافة يدوي
