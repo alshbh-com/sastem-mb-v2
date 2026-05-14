@@ -23,8 +23,9 @@ const Orders = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { canEdit, currentUser, logout } = useAdminAuth();
-  const canEditOrders = canEdit('orders');
   const isModerator = (currentUser as any)?.role === 'moderator';
+  const isSupervisor = (currentUser as any)?.role === 'supervisor';
+  const canEditOrders = isSupervisor ? true : canEdit('orders');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [bulkAgentId, setBulkAgentId] = useState<string>("");
   const [bulkShippingCost, setBulkShippingCost] = useState<number>(0);
@@ -256,6 +257,20 @@ const Orders = () => {
       
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Moderator usernames - used by supervisor to filter orders
+  const { data: moderatorUsernames } = useQuery({
+    queryKey: ["moderator_usernames"],
+    enabled: isSupervisor,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("username")
+        .eq("role", "moderator");
+      if (error) throw error;
+      return (data || []).map((u: any) => u.username);
     },
   });
 
@@ -799,6 +814,10 @@ const Orders = () => {
   };
 
   const filteredOrders = orders?.filter(order => {
+    if (isSupervisor) {
+      const creator = (order as any).created_by_username;
+      if (!creator || !moderatorUsernames?.includes(creator)) return false;
+    }
     if (statusFilter !== "all" && order.status !== statusFilter) return false;
     if (startDate || endDate) {
       const orderDate = new Date(order.created_at).toISOString().split('T')[0];
@@ -885,7 +904,7 @@ const Orders = () => {
                   {!canEditOrders && (
                     <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">مشاهدة فقط</span>
                   )}
-                  {canEditOrders && (
+                  {canEditOrders && !isSupervisor && (
                   <Button onClick={() => setManualOrderDialogOpen(true)} size="sm" variant="outline">
                     <Plus className="ml-2 h-4 w-4" />
                     إضافة يدوي

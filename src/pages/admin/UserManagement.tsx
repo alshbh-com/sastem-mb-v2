@@ -54,7 +54,7 @@ const UserManagement = () => {
   const [permissionSettings, setPermissionSettings] = useState<PermissionSetting[]>([]);
   const [showPasswords, setShowPasswords] = useState(false);
   
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'moderator' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'moderator' | 'supervisor' });
   const [passwordForm, setPasswordForm] = useState({ master: '', payment: '', admin_delete: '', admin: '', cashbox: '', reset_data: '' });
 
   // Fetch users
@@ -116,11 +116,22 @@ const UserManagement = () => {
       toast.success('تم إنشاء المستخدم');
       logActivity('إنشاء مستخدم', 'user_management', { username: data.username, role: (data as any).role });
       const isModerator = (data as any).role === 'moderator';
+      const isSupervisor = (data as any).role === 'supervisor';
       setNewUser({ username: '', password: '', role: 'admin' });
       setSelectedUser(data);
 
       if (isModerator) {
         // Moderator: auto-grant only the orders permission (edit) and skip dialog
+        setCreateDialogOpen(false);
+        savePermissionsMutation.mutate({
+          userId: data.id,
+          permissions: PERMISSIONS.map(p => ({
+            permission: p.id,
+            type: p.id === 'orders' ? 'edit' : 'none'
+          }))
+        });
+      } else if (isSupervisor) {
+        // Supervisor: auto-grant orders edit permission and skip dialog
         setCreateDialogOpen(false);
         savePermissionsMutation.mutate({
           userId: data.id,
@@ -428,8 +439,8 @@ const UserManagement = () => {
                       <Label>نوع المستخدم</Label>
                       <RadioGroup
                         value={newUser.role}
-                        onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v as 'admin' | 'moderator' }))}
-                        className="flex gap-4 mt-2"
+                        onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v as 'admin' | 'moderator' | 'supervisor' }))}
+                        className="flex flex-col gap-3 mt-2"
                       >
                         <div className="flex items-center gap-2">
                           <RadioGroupItem value="admin" id="role-admin" />
@@ -439,15 +450,24 @@ const UserManagement = () => {
                           <RadioGroupItem value="moderator" id="role-moderator" />
                           <Label htmlFor="role-moderator" className="cursor-pointer">مدريتور (تسجيل أوردرات يدوي فقط)</Label>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="supervisor" id="role-supervisor" />
+                          <Label htmlFor="role-supervisor" className="cursor-pointer">مشرف (يشوف ويعدل ويمسح أوردرات المدريتور)</Label>
+                        </div>
                       </RadioGroup>
                       {newUser.role === 'moderator' && (
                         <p className="text-xs text-primary mt-2">
                           سيظهر للمدريتور فقط نموذج إضافة أوردر يدوي داخل صفحة الأوردرات
                         </p>
                       )}
+                      {newUser.role === 'supervisor' && (
+                        <p className="text-xs text-primary mt-2">
+                          المشرف يرى فقط الأوردرات اللي سجلها المدريتور والموجودة في قسم الأوردرات (قبل تعيين مندوب)
+                        </p>
+                      )}
                     </div>
                     <Button onClick={handleCreateUser} className="w-full">
-                      {newUser.role === 'moderator' ? 'إنشاء المدريتور' : 'إنشاء وتحديد الصلاحيات'}
+                      {newUser.role === 'moderator' ? 'إنشاء المدريتور' : newUser.role === 'supervisor' ? 'إنشاء المشرف' : 'إنشاء وتحديد الصلاحيات'}
                     </Button>
                   </div>
                 </DialogContent>
@@ -473,6 +493,8 @@ const UserManagement = () => {
                     <TableCell>
                       {(user as any).role === 'moderator' ? (
                         <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-1 rounded text-xs font-medium">مدريتور</span>
+                      ) : (user as any).role === 'supervisor' ? (
+                        <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-2 py-1 rounded text-xs font-medium">مشرف</span>
                       ) : (
                         <span className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-1 rounded text-xs font-medium">مدير</span>
                       )}
