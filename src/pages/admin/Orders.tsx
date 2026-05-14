@@ -52,7 +52,8 @@ const Orders = () => {
     productSize: "",
     productColor: "",
     productQuantity: "1",
-    governorateId: ""
+    governorateId: "",
+    shippingCost: ""
   });
 
   // تحويل الأرقام العربية إلى لاتينية
