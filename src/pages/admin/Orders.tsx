@@ -23,8 +23,9 @@ const Orders = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { canEdit, currentUser, logout } = useAdminAuth();
-  const canEditOrders = canEdit('orders');
   const isModerator = (currentUser as any)?.role === 'moderator';
+  const isSupervisor = (currentUser as any)?.role === 'supervisor';
+  const canEditOrders = isSupervisor ? true : canEdit('orders');
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [bulkAgentId, setBulkAgentId] = useState<string>("");
   const [bulkShippingCost, setBulkShippingCost] = useState<number>(0);
