@@ -169,7 +169,7 @@ const Invoices = () => {
     XLSX.writeFile(wb, fileName);
   };
 
-  const generateInvoiceCell = (order: any, brandName: string, watermarkText: string, logoUrl: string | null) => {
+  const generateInvoiceCell = (order: any, brandName: string, watermarkText: string, logoUrl: string | null, barcodeSvg: string = '', qrDataUrl: string = '') => {
     const totalAmount = parseFloat(order.total_amount.toString());
     const customerShipping = parseFloat((order.shipping_cost || 0).toString());
     const totalPrice = totalAmount + customerShipping;
