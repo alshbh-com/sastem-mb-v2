@@ -116,11 +116,22 @@ const UserManagement = () => {
       toast.success('تم إنشاء المستخدم');
       logActivity('إنشاء مستخدم', 'user_management', { username: data.username, role: (data as any).role });
       const isModerator = (data as any).role === 'moderator';
+      const isSupervisor = (data as any).role === 'supervisor';
       setNewUser({ username: '', password: '', role: 'admin' });
       setSelectedUser(data);
 
       if (isModerator) {
         // Moderator: auto-grant only the orders permission (edit) and skip dialog
+        setCreateDialogOpen(false);
+        savePermissionsMutation.mutate({
+          userId: data.id,
+          permissions: PERMISSIONS.map(p => ({
+            permission: p.id,
+            type: p.id === 'orders' ? 'edit' : 'none'
+          }))
+        });
+      } else if (isSupervisor) {
+        // Supervisor: auto-grant orders edit permission and skip dialog
         setCreateDialogOpen(false);
         savePermissionsMutation.mutate({
           userId: data.id,
