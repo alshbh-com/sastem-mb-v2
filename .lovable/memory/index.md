@@ -1,7 +1,7 @@
 # Project Memory
 
 ## Core
-maka default brand. Multi-office branding (logo, watermark) via app_settings.
+BM default brand. Multi-office branding (logo, watermark) via app_settings.
 Admin/Vault master password: "01278006248" (editable via UI). Owner user: maka.
 Phone number is unique customer ID; new orders update existing customer data.
 Financial updates and status reversals MUST use DB Triggers to prevent double deduction.
