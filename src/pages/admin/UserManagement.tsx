@@ -54,7 +54,7 @@ const UserManagement = () => {
   const [permissionSettings, setPermissionSettings] = useState<PermissionSetting[]>([]);
   const [showPasswords, setShowPasswords] = useState(false);
   
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'moderator' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'admin' as 'admin' | 'moderator' | 'supervisor' });
   const [passwordForm, setPasswordForm] = useState({ master: '', payment: '', admin_delete: '', admin: '', cashbox: '', reset_data: '' });
 
   // Fetch users
