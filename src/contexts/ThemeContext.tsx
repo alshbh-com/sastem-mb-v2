@@ -50,8 +50,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       if (data) {
         setActiveTheme(data.active_theme);
         setActiveTemplate(data.active_template);
-          setPlatformNameState((data as any).platform_name || 'maka');
-          setInvoiceNameState((data as any).invoice_name || 'maka');
+          setPlatformNameState((data as any).platform_name || 'BM');
+          setInvoiceNameState((data as any).invoice_name || 'BM');
         const theme = themePresets.find(t => t.id === data.active_theme);
         if (theme) applyTheme(theme);
       }
