@@ -52,7 +52,8 @@ const Orders = () => {
     productSize: "",
     productColor: "",
     productQuantity: "1",
-    governorateId: ""
+    governorateId: "",
+    shippingCost: ""
   });
 
   // تحويل الأرقام العربية إلى لاتينية
@@ -60,13 +61,13 @@ const Orders = () => {
     s.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)));
 
-  // parser لنص الأوردر اليدوي
+  // Smart free-form parser - يحلل نص الأوردر بأي شكل
   const parseManualOrderText = (raw: string) => {
     if (!raw || !raw.trim()) return;
-    const text = raw.replace(/[()]/g, "").trim();
+    const text = normalizeDigits(raw.replace(/[()]/g, "")).trim();
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-    const get = (keys: string[]) => {
+    const labelGet = (keys: string[]) => {
       for (const line of lines) {
         const m = line.match(/^([^:：]+)[:：](.*)$/);
         if (!m) continue;
@@ -76,49 +77,123 @@ const Orders = () => {
       return "";
     };
 
-    const code = get(["الكود", "كود"]);
-    const dateRaw = normalizeDigits(get(["التاريخ", "تاريخ"]));
-    const account = get(["الاكونت", "الأكونت", "اكونت", "أكونت", "اسم الاكونت", "اسم الأكونت"]);
-    const customer = get(["اسم العميل", "العميل"]);
-    const address = get(["العنوان", "عنوان"]);
-    const phoneRaw = normalizeDigits(get(["التليفون", "التلفون", "الموبايل", "الهاتف", "تليفون", "موبايل"]));
-    const productLine = get(["الاوردر", "الأوردر", "المنتج", "اوردر", "أوردر"]);
-    const priceLineRaw = normalizeDigits(get(["اجمالي السعر", "إجمالي السعر", "السعر", "الاجمالي", "الإجمالي", "اجمالي"]));
+    // 1) رقم الهاتف: 10-11 رقم متتالي يبدأ بـ 01
+    let phone = "";
+    let phoneLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const m = lines[i].match(/(01\d{9})/);
+      if (m) { phone = m[1]; phoneLineIdx = i; break; }
+    }
 
-    // التاريخ: نقبل "24/4" أو "24/4/2026" أو "2026-04-24"
-    let parsedDate = manualOrder.manualDate;
-    if (dateRaw) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) {
-        parsedDate = dateRaw;
-      } else {
-        const m = dateRaw.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+    // 2) السعر والشحن: سطر يحتوي "اجمالي" أو "إجمالي" - يدعم 500+100
+    let productPrice = "";
+    let parsedShipping = "";
+    let priceLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/اجمال[يى]|إجمال[يى]|الاجمال|الإجمال|السعر/.test(lines[i])) {
+        const m = lines[i].match(/(\d+(?:\.\d+)?)\s*(?:\+\s*(\d+(?:\.\d+)?))?/);
         if (m) {
-          const d = m[1].padStart(2, "0");
-          const mo = m[2].padStart(2, "0");
-          let y = m[3] || String(new Date().getFullYear());
-          if (y.length === 2) y = "20" + y;
-          parsedDate = `${y}-${mo}-${d}`;
+          productPrice = m[1];
+          if (m[2]) parsedShipping = m[2];
+          priceLineIdx = i;
+          break;
         }
       }
     }
+    // fallback: سطر فيه فقط "X+Y" أو رقم لوحده
+    if (!productPrice) {
+      for (let i = 0; i < lines.length; i++) {
+        if (i === phoneLineIdx) continue;
+        const m = lines[i].match(/^(\d{2,5})\s*\+\s*(\d{1,4})$/);
+        if (m) { productPrice = m[1]; parsedShipping = m[2]; priceLineIdx = i; break; }
+      }
+    }
 
-    // السعر: لو فيه + يبقا أول رقم = سعر المنتج، الباقي شحن (هنتجاهله لأن الشحن يتحسب من المحافظة)
-    let productPrice = "";
-    if (priceLineRaw) {
-      const nums = priceLineRaw.match(/\d+(?:\.\d+)?/g);
-      if (nums && nums.length > 0) productPrice = nums[0];
+    // 3) الكود: توكن قصير حروف+أرقام (z2, bm2, ab12, 2bm)
+    let code = "";
+    let codeLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx) continue;
+      const t = lines[i].trim();
+      if (/^[a-zA-Z]{1,4}\s?\d{1,4}$/.test(t) || /^\d{1,4}\s?[a-zA-Z]{1,4}$/.test(t)) {
+        code = t.replace(/\s+/g, "");
+        codeLineIdx = i;
+        break;
+      }
+    }
+    if (!code) code = labelGet(["الكود", "كود"]);
+
+    // 4) لون / مقاس / منتج
+    const colors = ["ابيض","أبيض","اسود","أسود","احمر","أحمر","ازرق","أزرق","اخضر","أخضر","اصفر","أصفر","بني","رمادي","وردي","بيج","نيلي","كحلي","فضي","ذهبي","برتقالي","موف","تركواز"];
+    const productKeywords = /نص كم|كم طويل|كم قصير|قميص|بنطلون|بلوزة|بلوزه|فستان|تيشرت|جاكت|سرين[هة]|بيجام[هة]|شورت|طقم|بادي|بودي|اوفر|كاب|كاش|اون/;
+    const sizeRegex = /(?:^|\s)مقاس\s*([0-9a-zA-Z]+)|\b(XXXL|XXL|XL|L|M|S)\b/i;
+
+    let color = "";
+    let size = "";
+    const productParts: string[] = [];
+    const productIdxs = new Set<number>();
+
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx || i === codeLineIdx) continue;
+      const line = lines[i];
+      const foundColor = colors.find(c => line.includes(c));
+      const sm = line.match(sizeRegex);
+      if (foundColor || sm || productKeywords.test(line)) {
+        productParts.push(line);
+        productIdxs.add(i);
+        if (foundColor && !color) color = foundColor;
+        if (sm && !size) size = (sm[1] || sm[2] || "").toUpperCase();
+      }
+    }
+    const productLine = productParts.join(" ").trim();
+
+    // 5) العنوان: أطول سطر متبقي وفيه أكثر من كلمتين
+    let address = "";
+    let addressIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx || i === codeLineIdx) continue;
+      if (productIdxs.has(i)) continue;
+      const line = lines[i];
+      if (line.split(/\s+/).length >= 2 && line.length > address.length) {
+        address = line;
+        addressIdx = i;
+      }
+    }
+    if (!address) address = labelGet(["العنوان", "عنوان"]);
+
+    // 6) اسم العميل: أول سطر متبقي
+    let customerName = "";
+    for (let i = 0; i < lines.length; i++) {
+      if (i === phoneLineIdx || i === priceLineIdx || i === codeLineIdx || i === addressIdx) continue;
+      if (productIdxs.has(i)) continue;
+      customerName = lines[i];
+      break;
+    }
+    if (!customerName) customerName = labelGet(["اسم العميل", "العميل", "الاسم"]);
+
+    // 7) محاولة ربط المنتج بالمخزون
+    let productId = "";
+    if (productsList && (productLine || code)) {
+      const search = (productLine + " " + code).toLowerCase();
+      const found = productsList.find(p => {
+        const n = p.name.toLowerCase();
+        return search.includes(n) || (code && n.includes(code.toLowerCase()));
+      });
+      if (found) productId = found.id;
     }
 
     setManualOrder(prev => ({
       ...prev,
       manualCode: code || prev.manualCode,
-      manualDate: parsedDate,
-      accountName: account || prev.accountName,
-      customerName: customer || prev.customerName,
+      customerName: customerName || prev.customerName,
       address: address || prev.address,
-      phone: phoneRaw || prev.phone,
+      phone: phone || prev.phone,
       productName: productLine || prev.productName,
       productPrice: productPrice || prev.productPrice,
+      productColor: color || prev.productColor,
+      productSize: size || prev.productSize,
+      productId: productId || prev.productId,
+      shippingCost: parsedShipping !== "" ? parsedShipping : prev.shippingCost,
     }));
   };
 
@@ -332,7 +407,6 @@ const Orders = () => {
 
   const createManualOrderMutation = useMutation({
     mutationFn: async () => {
-      const selectedGov = governorates?.find(g => g.id === manualOrder.governorateId);
       const selectedProduct = productsList?.find(p => p.id === manualOrder.productId);
       const productName = selectedProduct?.name || manualOrder.productName;
 
@@ -353,7 +427,6 @@ const Orders = () => {
               .update({
                 name: manualOrder.customerName || "عميل غير محدد",
                 address: manualOrder.address || "غير محدد",
-                governorate: selectedGov?.name || null
               })
               .eq("id", existingCustomer.id);
           }
@@ -366,7 +439,6 @@ const Orders = () => {
               name: manualOrder.customerName || "عميل غير محدد",
               phone: manualOrder.phone || "غير متوفر",
               address: manualOrder.address || "غير محدد",
-              governorate: selectedGov?.name || null
             })
             .select()
             .single();
@@ -379,8 +451,8 @@ const Orders = () => {
       const productPrice = parseFloat(manualOrder.productPrice) || 0;
       const quantity = parseInt(manualOrder.productQuantity) || 1;
       const totalProductPrice = productPrice * quantity;
-      // Shipping is auto from governorate
-      const shippingCost = selectedGov?.shipping_cost ? parseFloat(selectedGov.shipping_cost.toString()) : 0;
+      // الشحن من النص (بعد علامة +) — لا يتأثر بالكمية
+      const shippingCost = parseFloat(manualOrder.shippingCost) || 0;
 
       const productDetails = productName ? [{
         name: productName,
@@ -397,7 +469,7 @@ const Orders = () => {
           customer_id: customerId,
           total_amount: totalProductPrice,
           shipping_cost: shippingCost,
-          governorate_id: manualOrder.governorateId && manualOrder.governorateId.trim() !== "" ? manualOrder.governorateId : null,
+          governorate_id: null,
           status: 'pending',
           order_details: productDetails ? JSON.stringify(productDetails) : null,
           manual_code: manualOrder.manualCode || null,
@@ -460,7 +532,8 @@ const Orders = () => {
         productSize: "",
         productColor: "",
         productQuantity: "1",
-        governorateId: ""
+        governorateId: "",
+        shippingCost: ""
       });
     },
     onError: (error: any) => {
@@ -1212,49 +1285,31 @@ const Orders = () => {
                     setManualOrderText(e.target.value);
                     parseManualOrderText(e.target.value);
                   }}
-                  placeholder={`الكود: 8532\nالتاريخ: 24/4\nاسم الاكونت: احمد النسر\nاسم العميل: احمد محمد\nالعنوان: المحلة الكبرى بلقينا عند قاعة الفيروز\nرقم التليفون: 01029882970\nالاوردر: سرينه\nاجمالي السعر: 450+70`}
+                  placeholder={`ليلي احمد\nحلوان كورنيش النيل بجوار...\n01202877276\nابيض نص كم مقاس L\nاجمالي 450+70\nbm2`}
                   className="min-h-[200px] text-sm font-mono"
                   dir="rtl"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  ✨ يتم تعبئة الحقول تلقائياً. الكود متغير — اكتب أي كود من عندك.
+                  ✨ الصق الأوردر بأي ترتيب — يتم تعبئة الحقول تلقائياً. الشحن يُكتب بعد علامة + (مثال: 500+100)
                 </p>
               </div>
 
-              {(manualOrder.manualCode || manualOrder.customerName || manualOrder.phone) && (
+              {(manualOrder.manualCode || manualOrder.customerName || manualOrder.phone || manualOrder.productPrice) && (
                 <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1 border">
                   <p className="font-bold text-primary mb-1">📋 البيانات المستخرجة:</p>
                   {manualOrder.manualCode && <p>الكود: <span className="font-bold">{manualOrder.manualCode}</span></p>}
-                  {manualOrder.manualDate && <p>التاريخ: {manualOrder.manualDate}</p>}
-                  {manualOrder.accountName && <p>الاكونت: {manualOrder.accountName}</p>}
                   {manualOrder.customerName && <p>العميل: {manualOrder.customerName}</p>}
                   {manualOrder.phone && <p>الهاتف: {manualOrder.phone}</p>}
                   {manualOrder.address && <p>العنوان: {manualOrder.address}</p>}
-                  {manualOrder.productName && <p>المنتج المكتوب: {manualOrder.productName}</p>}
-                  {manualOrder.productPrice && <p>السعر (بدون شحن): {manualOrder.productPrice} ج.م</p>}
+                  {manualOrder.productName && <p>المنتج: {manualOrder.productName}</p>}
+                  {manualOrder.productColor && <p>اللون: {manualOrder.productColor}</p>}
+                  {manualOrder.productSize && <p>المقاس: {manualOrder.productSize}</p>}
+                  {manualOrder.productPrice && <p>سعر المنتج: {manualOrder.productPrice} ج.م</p>}
+                  {manualOrder.shippingCost && <p>الشحن: {manualOrder.shippingCost} ج.م</p>}
                 </div>
               )}
 
               <div className="border-t pt-3">
-                <Label>المحافظة (الشحن يُحسب تلقائياً) *</Label>
-                <Select
-                  value={manualOrder.governorateId}
-                  onValueChange={(value) => setManualOrder({ ...manualOrder, governorateId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر المحافظة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {governorates?.map((gov) => (
-                      <SelectItem key={gov.id} value={gov.id}>
-                        {gov.name} - {gov.shipping_cost} ج.م
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
                 <Label>اختر المنتج من المخزون (لخصم الكمية)</Label>
                 <Select
                   value={manualOrder.productId}
@@ -1291,12 +1346,23 @@ const Orders = () => {
                 />
               </div>
 
+              <div>
+                <Label>سعر الشحن (يدوي)</Label>
+                <Input
+                  type="number"
+                  value={manualOrder.shippingCost}
+                  onChange={(e) => setManualOrder({ ...manualOrder, shippingCost: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+
               {manualOrder.productPrice && (
                 <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
-                  <p>سعر المنتج: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1)).toFixed(2)} ج.م</p>
-                  <p>سعر الشحن (تلقائي من المحافظة): {(governorates?.find(g => g.id === manualOrder.governorateId)?.shipping_cost || 0)} ج.م</p>
+                  <p>سعر المنتج × الكمية: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1)).toFixed(2)} ج.م</p>
+                  <p>الشحن (ثابت لا يتأثر بالكمية): {(parseFloat(manualOrder.shippingCost) || 0).toFixed(2)} ج.م</p>
                   <p className="font-bold pt-1 border-t">
-                    الإجمالي: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1) + parseFloat((governorates?.find(g => g.id === manualOrder.governorateId)?.shipping_cost || 0).toString())).toFixed(2)} ج.م
+                    الإجمالي: {((parseFloat(manualOrder.productPrice) || 0) * (parseInt(manualOrder.productQuantity) || 1) + (parseFloat(manualOrder.shippingCost) || 0)).toFixed(2)} ج.م
                   </p>
                 </div>
               )}
@@ -1310,11 +1376,7 @@ const Orders = () => {
               <Button
                 onClick={() => {
                   if (!manualOrder.productPrice) {
-                    toast.error("لم يتم استخراج السعر — تأكد من كتابة (اجمالي السعر: ...) في النص");
-                    return;
-                  }
-                  if (!manualOrder.governorateId) {
-                    toast.error("يرجى اختيار المحافظة");
+                    toast.error("لم يتم استخراج السعر — تأكد من وجود سطر فيه (اجمالي) ورقم");
                     return;
                   }
                   createManualOrderMutation.mutate();
