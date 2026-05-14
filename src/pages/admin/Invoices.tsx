@@ -188,7 +188,10 @@ const Invoices = () => {
             <span style="font-size:24px;font-weight:bold;color:#000;letter-spacing:1px;">${brandName}</span>
           </div>
           
-          <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:7px;border:1.5px solid #000;padding:5px;">فاتورة #${order.manual_code || order.order_number || order.id.slice(0, 8)}</div>
+          <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:7px;border:1.5px solid #000;padding:5px;">
+            فاتورة #${order.manual_code || order.order_number || order.id.slice(0, 8)}
+            ${order.tracking_code ? `<div style="font-size:11px;font-weight:normal;margin-top:2px;">كود التتبع: ${order.tracking_code}</div>` : ''}
+          </div>
           
           <div style="font-size:14px;line-height:1.9;margin-bottom:7px;padding:6px;border:1px solid #000;">
             <div><strong>التاريخ:</strong> ${new Date(order.created_at).toLocaleDateString('ar-EG')} &nbsp;&nbsp; <strong>العميل:</strong> ${order.customers?.name}</div>
