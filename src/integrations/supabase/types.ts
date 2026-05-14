@@ -543,6 +543,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          account_name: string | null
           agent_shipping_cost: number
           assigned_at: string | null
           created_at: string
@@ -556,6 +557,7 @@ export type Database = {
           id: string
           invoice_id: string | null
           manual_code: string | null
+          manual_order_date: string | null
           modified_amount: number | null
           notes: string | null
           order_details: string | null
@@ -566,6 +568,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_name?: string | null
           agent_shipping_cost?: number
           assigned_at?: string | null
           created_at?: string
@@ -579,6 +582,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           manual_code?: string | null
+          manual_order_date?: string | null
           modified_amount?: number | null
           notes?: string | null
           order_details?: string | null
@@ -589,6 +593,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_name?: string | null
           agent_shipping_cost?: number
           assigned_at?: string | null
           created_at?: string
@@ -602,6 +607,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           manual_code?: string | null
+          manual_order_date?: string | null
           modified_amount?: number | null
           notes?: string | null
           order_details?: string | null
