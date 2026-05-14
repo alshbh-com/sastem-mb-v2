@@ -541,11 +541,45 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_username: string | null
+          created_at: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          order_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_username?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          order_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_username?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          order_id?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           account_name: string | null
           agent_shipping_cost: number
           assigned_at: string | null
+          barcode_value: string | null
           created_at: string
           created_by: string | null
           created_by_user_id: string | null
@@ -562,15 +596,18 @@ export type Database = {
           notes: string | null
           order_details: string | null
           order_number: number
+          qr_value: string | null
           shipping_cost: number
           status: Database["public"]["Enums"]["order_status"]
           total_amount: number
+          tracking_code: string | null
           updated_at: string
         }
         Insert: {
           account_name?: string | null
           agent_shipping_cost?: number
           assigned_at?: string | null
+          barcode_value?: string | null
           created_at?: string
           created_by?: string | null
           created_by_user_id?: string | null
@@ -587,15 +624,18 @@ export type Database = {
           notes?: string | null
           order_details?: string | null
           order_number?: number
+          qr_value?: string | null
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
+          tracking_code?: string | null
           updated_at?: string
         }
         Update: {
           account_name?: string | null
           agent_shipping_cost?: number
           assigned_at?: string | null
+          barcode_value?: string | null
           created_at?: string
           created_by?: string | null
           created_by_user_id?: string | null
@@ -612,9 +652,11 @@ export type Database = {
           notes?: string | null
           order_details?: string | null
           order_number?: number
+          qr_value?: string | null
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
           total_amount?: number
+          tracking_code?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -834,6 +876,110 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scan_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          order_id: string | null
+          payload: Json | null
+          session_id: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          order_id?: string | null
+          payload?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          order_id?: string | null
+          payload?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      scan_session_items: {
+        Row: {
+          id: string
+          order_id: string | null
+          scanned_at: string
+          scanned_code: string | null
+          session_id: string | null
+        }
+        Insert: {
+          id?: string
+          order_id?: string | null
+          scanned_at?: string
+          scanned_code?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          id?: string
+          order_id?: string | null
+          scanned_at?: string
+          scanned_code?: string | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_session_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "scan_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_sessions: {
+        Row: {
+          ended_at: string | null
+          id: string
+          notes: string | null
+          started_at: string
+          started_by: string | null
+          started_by_username: string | null
+          status: string
+          total_scanned: number
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          started_at?: string
+          started_by?: string | null
+          started_by_username?: string | null
+          status?: string
+          total_scanned?: number
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          notes?: string | null
+          started_at?: string
+          started_by?: string | null
+          started_by_username?: string | null
+          status?: string
+          total_scanned?: number
+        }
+        Relationships: []
       }
       statistics: {
         Row: {
