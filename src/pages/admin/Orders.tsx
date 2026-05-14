@@ -407,7 +407,6 @@ const Orders = () => {
 
   const createManualOrderMutation = useMutation({
     mutationFn: async () => {
-      const selectedGov = governorates?.find(g => g.id === manualOrder.governorateId);
       const selectedProduct = productsList?.find(p => p.id === manualOrder.productId);
       const productName = selectedProduct?.name || manualOrder.productName;
 
@@ -428,7 +427,6 @@ const Orders = () => {
               .update({
                 name: manualOrder.customerName || "عميل غير محدد",
                 address: manualOrder.address || "غير محدد",
-                governorate: selectedGov?.name || null
               })
               .eq("id", existingCustomer.id);
           }
@@ -441,7 +439,6 @@ const Orders = () => {
               name: manualOrder.customerName || "عميل غير محدد",
               phone: manualOrder.phone || "غير متوفر",
               address: manualOrder.address || "غير محدد",
-              governorate: selectedGov?.name || null
             })
             .select()
             .single();
@@ -454,8 +451,8 @@ const Orders = () => {
       const productPrice = parseFloat(manualOrder.productPrice) || 0;
       const quantity = parseInt(manualOrder.productQuantity) || 1;
       const totalProductPrice = productPrice * quantity;
-      // Shipping is auto from governorate
-      const shippingCost = selectedGov?.shipping_cost ? parseFloat(selectedGov.shipping_cost.toString()) : 0;
+      // الشحن من النص (بعد علامة +) — لا يتأثر بالكمية
+      const shippingCost = parseFloat(manualOrder.shippingCost) || 0;
 
       const productDetails = productName ? [{
         name: productName,
@@ -472,7 +469,7 @@ const Orders = () => {
           customer_id: customerId,
           total_amount: totalProductPrice,
           shipping_cost: shippingCost,
-          governorate_id: manualOrder.governorateId && manualOrder.governorateId.trim() !== "" ? manualOrder.governorateId : null,
+          governorate_id: null,
           status: 'pending',
           order_details: productDetails ? JSON.stringify(productDetails) : null,
           manual_code: manualOrder.manualCode || null,
@@ -535,7 +532,8 @@ const Orders = () => {
         productSize: "",
         productColor: "",
         productQuantity: "1",
-        governorateId: ""
+        governorateId: "",
+        shippingCost: ""
       });
     },
     onError: (error: any) => {
