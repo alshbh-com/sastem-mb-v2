@@ -169,7 +169,7 @@ const Invoices = () => {
     XLSX.writeFile(wb, fileName);
   };
 
-  const generateInvoiceCell = (order: any, brandName: string, watermarkText: string, logoUrl: string | null) => {
+  const generateInvoiceCell = (order: any, brandName: string, watermarkText: string, logoUrl: string | null, barcodeSvg: string = '', qrDataUrl: string = '') => {
     const totalAmount = parseFloat(order.total_amount.toString());
     const customerShipping = parseFloat((order.shipping_cost || 0).toString());
     const totalPrice = totalAmount + customerShipping;
@@ -191,6 +191,10 @@ const Invoices = () => {
           <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:7px;border:1.5px solid #000;padding:5px;">
             فاتورة #${order.manual_code || order.order_number || order.id.slice(0, 8)}
             ${order.tracking_code ? `<div style="font-size:11px;font-weight:normal;margin-top:2px;">كود التتبع: ${order.tracking_code}</div>` : ''}
+            ${(barcodeSvg || qrDataUrl) ? `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;background:#fff;padding:4px;">
+              ${barcodeSvg ? `<div style="background:#fff;">${barcodeSvg}</div>` : ''}
+              ${qrDataUrl ? `<img src="${qrDataUrl}" style="width:70px;height:70px;background:#fff;" />` : ''}
+            </div>` : ''}
           </div>
           
           <div style="font-size:14px;line-height:1.9;margin-bottom:7px;padding:6px;border:1px solid #000;">
@@ -261,7 +265,7 @@ const Invoices = () => {
     </div>`;
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const ordersToPrint = filteredOrders?.filter(o => selectedOrders.includes(o.id));
     if (!ordersToPrint?.length) return;
 
@@ -270,13 +274,29 @@ const Invoices = () => {
     const watermarkText = selectedOffice ? (selectedOffice.watermark_name || selectedOffice.name) : invoiceName;
     const logoUrl = selectedOffice?.logo_url || null;
 
+    const [{ default: JsBarcode }, { default: QRCode }] = await Promise.all([
+      import('jsbarcode'),
+      import('qrcode'),
+    ]);
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // فاتورة واحدة فقط لكل أوردر — بدون نسخ مكررة
-    const cells: string[] = ordersToPrint.map(order =>
-      generateInvoiceCell(order, brandName, watermarkText, logoUrl)
-    );
+    // فاتورة واحدة فقط لكل أوردر — مع باركود وQR قابلين للقراءة بالمسدس
+    const cells: string[] = await Promise.all(ordersToPrint.map(async (order: any) => {
+      const code = order.tracking_code || order.barcode_value || `ORD-${order.order_number}`;
+      let barcodeSvg = '';
+      try {
+        const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        JsBarcode(svgEl, code, { format: 'CODE128', height: 45, fontSize: 12, margin: 2, displayValue: true });
+        barcodeSvg = new XMLSerializer().serializeToString(svgEl);
+      } catch (e) { console.error('barcode err', e); }
+      let qrDataUrl = '';
+      try {
+        qrDataUrl = await QRCode.toDataURL(code, { width: 140, margin: 1 });
+      } catch (e) { console.error('qr err', e); }
+      return generateInvoiceCell(order, brandName, watermarkText, logoUrl, barcodeSvg, qrDataUrl);
+    }));
 
     let pagesHTML = '';
     cells.forEach((cell, idx) => {
