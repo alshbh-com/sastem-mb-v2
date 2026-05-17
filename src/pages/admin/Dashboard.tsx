@@ -17,7 +17,8 @@ import {
   LogOut,
   Palette,
   Building2,
-  ScanLine
+  ScanLine,
+  Lock
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import SearchBar from "@/components/admin/SearchBar";
