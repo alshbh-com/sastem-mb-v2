@@ -18,6 +18,7 @@ import Categories from "./pages/admin/Categories";
 import AgentOrders from "./pages/admin/AgentOrders";
 import Statistics from "./pages/admin/Statistics";
 import Invoices from "./pages/admin/Invoices";
+import LockedInvoices from "./pages/admin/LockedInvoices";
 import Governorates from "./pages/admin/Governorates";
 import AllOrders from "./pages/admin/AllOrders";
 import ResetData from "./pages/admin/ResetData";
@@ -62,6 +63,7 @@ const App = () => (
                 <Route path="/admin/agent-orders" element={<AdminRoute><AgentOrders /></AdminRoute>} />
                 <Route path="/admin/statistics" element={<AdminRoute><Statistics /></AdminRoute>} />
                 <Route path="/admin/invoices" element={<AdminRoute><Invoices /></AdminRoute>} />
+                <Route path="/admin/locked-invoices" element={<AdminRoute><LockedInvoices /></AdminRoute>} />
                 <Route path="/admin/governorates" element={<AdminRoute><Governorates /></AdminRoute>} />
                 <Route path="/admin/all-orders" element={<AdminRoute><AllOrders /></AdminRoute>} />
                 <Route path="/admin/reset-data" element={<AdminRoute><ResetData /></AdminRoute>} />

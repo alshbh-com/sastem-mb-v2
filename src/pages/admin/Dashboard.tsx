@@ -17,7 +17,8 @@ import {
   LogOut,
   Palette,
   Building2,
-  ScanLine
+  ScanLine,
+  Lock
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import SearchBar from "@/components/admin/SearchBar";
@@ -40,6 +41,7 @@ const adminSections = [
   { title: "الإحصائيات", description: "إحصائيات المبيعات", icon: BarChart, path: "/admin/statistics", color: "text-cyan-500", permission: "statistics" },
   { title: "إحصائيات المدريتورين", description: "أداء كل مدريتور شهرياً", icon: UserCog, path: "/admin/moderator-stats", color: "text-blue-600", permission: "statistics" },
   { title: "الفواتير", description: "طباعة الفواتير", icon: FileText, path: "/admin/invoices", color: "text-pink-500", permission: "invoices" },
+  { title: "الفواتير المقفلة", description: "الفواتير اللي اتطبعت قبل كده", icon: Lock, path: "/admin/locked-invoices", color: "text-zinc-600", permission: "invoices" },
   { title: "المحافظات", description: "إدارة المحافظات وأسعار الشحن", icon: Settings, path: "/admin/governorates", color: "text-teal-500", permission: "governorates" },
   { title: "جميع الأوردرات", description: "عرض جميع الأوردرات", icon: ShoppingCart, path: "/admin/all-orders", color: "text-violet-500", permission: "all_orders" },
   { title: "إعادة تعيين البيانات", description: "مسح جميع البيانات والبدء من جديد", icon: Trash2, path: "/admin/reset-data", color: "text-red-600", permission: "reset_data" },
