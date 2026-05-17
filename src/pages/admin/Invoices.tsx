@@ -17,6 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 const Invoices = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { invoiceName } = useTheme();
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedOfficeId, setSelectedOfficeId] = useState<string>("default");
@@ -40,6 +41,7 @@ const Invoices = () => {
           governorates (name, shipping_cost),
           order_items (*, products (name))
         `)
+        .or("is_printed.is.null,is_printed.eq.false")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
