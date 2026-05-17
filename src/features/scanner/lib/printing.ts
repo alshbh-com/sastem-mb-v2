@@ -1,19 +1,25 @@
 import { ScannedOrder } from '../types';
 
-const html = (body: string) => `
+const html = (body: string, opts?: { pageSize?: string; gridCols?: number }) => `
 <!DOCTYPE html>
 <html dir="rtl">
 <head>
   <meta charset="utf-8">
   <title>طباعة</title>
   <style>
-    @page { size: A4; margin: 10mm; }
-    body { font-family: Arial, sans-serif; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
-    .label { border: 1px dashed #999; padding: 6mm; text-align: center; page-break-inside: avoid; }
+    @page { size: ${opts?.pageSize || 'A4'}; margin: 6mm; }
+    body { font-family: Arial, sans-serif; margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(${opts?.gridCols ?? 2}, 1fr); gap: 4mm; }
+    .label { border: 1px dashed #999; padding: 4mm; text-align: center; page-break-inside: avoid; }
     .label img, .label svg { max-width: 100%; }
     h2 { margin: 4px 0; }
     .meta { font-size: 11px; color: #555; margin-top: 4px; }
+    .invoice { border: 1px solid #333; padding: 4mm; page-break-inside: avoid; display: flex; flex-direction: column; gap: 2mm; }
+    .invoice .title { font-size: 22px; font-weight: bold; text-align: center; margin: 0; }
+    .invoice p { margin: 2px 0; font-size: 13px; }
+    .invoice .amount { font-size: 16px; font-weight: bold; }
+    .invoice .barcode-wrap { text-align: center; margin-top: auto; }
+    .invoice .barcode-wrap svg { max-width: 100%; height: 55px; }
   </style>
 </head>
 <body>${body}<script>window.onload=()=>{setTimeout(()=>window.print(),300)};</script></body>
