@@ -55,20 +55,29 @@ export const printBarcodeLabels = async (orders: ScannedOrder[]) => {
 };
 
 export const printInvoicesGrouped = async (orders: ScannedOrder[]) => {
-  // Lightweight invoice list (full invoice template stays in admin invoice page)
-  const rows = orders.map((o) => `
-    <div class="label">
-      <h2>فاتورة #${o.order_number}</h2>
-      <p>العميل: ${o.customer_name || '-'}</p>
-      <p>الهاتف: ${o.customer_phone || '-'}</p>
-      <p>المندوب: ${o.agent_name || '-'}</p>
-      <p>المدينة: ${o.governorate_name || '-'}</p>
-      <p style="font-size:18px; font-weight:bold;">المبلغ: ${o.total_amount.toFixed(2)} ج</p>
-      <p>كود التتبع: ${o.tracking_code || '-'}</p>
-    </div>
-  `).join('');
+  const JsBarcode = (await import('jsbarcode')).default;
+
+  const rows = orders.map((o) => {
+    const code = o.tracking_code || `ORD-${o.order_number}`;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    try { JsBarcode(svg, code, { format: 'CODE128', height: 55, fontSize: 12, margin: 2 }); } catch {}
+    const barcodeSvg = new XMLSerializer().serializeToString(svg);
+    return `
+      <div class="invoice">
+        <h2 class="title">MP</h2>
+        <p>العميل: ${o.customer_name || '-'}</p>
+        <p>الهاتف: ${o.customer_phone || '-'}</p>
+        <p>المندوب: ${o.agent_name || '-'}</p>
+        <p>المدينة: ${o.governorate_name || '-'}</p>
+        <p class="amount">المبلغ: ${o.total_amount.toFixed(2)} ج</p>
+        <div class="barcode-wrap">${barcodeSvg}</div>
+      </div>
+    `;
+  }).join('');
+
   const w = window.open('', '_blank', 'width=900,height=700');
   if (!w) return;
-  w.document.write(html(`<div class="grid">${rows}</div>`));
+  // A5 page with 2 invoices side by side (small paper, 2 per sheet)
+  w.document.write(html(`<div class="grid">${rows}</div>`, { pageSize: 'A5 landscape', gridCols: 2 }));
   w.document.close();
 };
