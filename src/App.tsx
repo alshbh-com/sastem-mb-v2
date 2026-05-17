@@ -18,6 +18,7 @@ import Categories from "./pages/admin/Categories";
 import AgentOrders from "./pages/admin/AgentOrders";
 import Statistics from "./pages/admin/Statistics";
 import Invoices from "./pages/admin/Invoices";
+import LockedInvoices from "./pages/admin/LockedInvoices";
 import Governorates from "./pages/admin/Governorates";
 import AllOrders from "./pages/admin/AllOrders";
 import ResetData from "./pages/admin/ResetData";
