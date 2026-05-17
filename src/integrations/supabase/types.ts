@@ -590,12 +590,14 @@ export type Database = {
           governorate_id: string | null
           id: string
           invoice_id: string | null
+          is_printed: boolean
           manual_code: string | null
           manual_order_date: string | null
           modified_amount: number | null
           notes: string | null
           order_details: string | null
           order_number: number
+          printed_at: string | null
           qr_value: string | null
           shipping_cost: number
           status: Database["public"]["Enums"]["order_status"]
@@ -618,12 +620,14 @@ export type Database = {
           governorate_id?: string | null
           id?: string
           invoice_id?: string | null
+          is_printed?: boolean
           manual_code?: string | null
           manual_order_date?: string | null
           modified_amount?: number | null
           notes?: string | null
           order_details?: string | null
           order_number?: number
+          printed_at?: string | null
           qr_value?: string | null
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
@@ -646,12 +650,14 @@ export type Database = {
           governorate_id?: string | null
           id?: string
           invoice_id?: string | null
+          is_printed?: boolean
           manual_code?: string | null
           manual_order_date?: string | null
           modified_amount?: number | null
           notes?: string | null
           order_details?: string | null
           order_number?: number
+          printed_at?: string | null
           qr_value?: string | null
           shipping_cost?: number
           status?: Database["public"]["Enums"]["order_status"]
