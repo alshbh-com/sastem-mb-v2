@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import invoiceLogo from "@/assets/invoice-logo.jpg";
 
 interface OrderLike {
   id: string;
@@ -15,19 +16,44 @@ interface OrderLike {
 const buildHtml = (body: string) => `<!DOCTYPE html>
 <html dir="rtl"><head><meta charset="utf-8"><title>طباعة الفواتير</title>
 <style>
-  @page { size: A5 landscape; margin: 6mm; }
+  @page { size: A5 portrait; margin: 5mm; }
   *{box-sizing:border-box}
   body { font-family: Arial, sans-serif; margin: 0; color:#000; background:#fff; }
-  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; }
-  .invoice { border: 1px solid #333; padding: 4mm; page-break-inside: avoid; display: flex; flex-direction: column; gap: 2mm; min-height: 130mm; }
-  .invoice .title { font-size: 28px; font-weight: bold; text-align: center; margin: 0; letter-spacing: 2px; }
-  .invoice p { margin: 2px 0; font-size: 13px; }
+  .stack { display: flex; flex-direction: column; gap: 4mm; }
+  .invoice {
+    border: 1px solid #333;
+    padding: 4mm;
+    page-break-inside: avoid;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3mm;
+    align-items: center;
+    height: 68mm;
+  }
+  .invoice .logo { display:flex; align-items:center; justify-content:center; }
+  .invoice .logo img { max-height: 50mm; max-width: 100%; object-fit: contain; }
+  .invoice .info { display:flex; flex-direction:column; gap:2mm; }
+  .invoice p { margin: 0; font-size: 13px; }
   .invoice .amount { font-size: 16px; font-weight: bold; }
   .invoice .barcode-wrap { text-align: center; margin-top: auto; }
-  .invoice .barcode-wrap svg { max-width: 100%; height: 60px; }
+  .invoice .barcode-wrap svg { max-width: 100%; height: 55px; }
 </style></head><body>${body}
-<script>window.onload=()=>{setTimeout(()=>window.print(),300)};</script>
+<script>window.onload=()=>{setTimeout(()=>window.print(),400)};</script>
 </body></html>`;
+
+const toDataUrl = async (url: string): Promise<string> => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return url;
+  }
+};
 
 export const printMpInvoices = async (
   orders: OrderLike[],
@@ -35,6 +61,7 @@ export const printMpInvoices = async (
 ) => {
   if (!orders?.length) return;
   const JsBarcode = (await import("jsbarcode")).default;
+  const logoSrc = await toDataUrl(invoiceLogo);
 
   const rows = orders
     .map((o) => {
@@ -46,7 +73,7 @@ export const printMpInvoices = async (
       try {
         JsBarcode(svg, code, {
           format: "CODE128",
-          height: 60,
+          height: 55,
           fontSize: 13,
           margin: 2,
         });
@@ -54,20 +81,22 @@ export const printMpInvoices = async (
       const barcodeSvg = new XMLSerializer().serializeToString(svg);
       return `
         <div class="invoice">
-          <h2 class="title">MP</h2>
-          <p>العميل: ${o.customers?.name || "-"}</p>
-          <p>الهاتف: ${o.customers?.phone || "-"}</p>
-          <p>المندوب: ${o.delivery_agents?.name || "-"}</p>
-          <p>المدينة: ${o.governorates?.name || "-"}</p>
-          <p class="amount">المبلغ: ${total.toFixed(2)} ج</p>
-          <div class="barcode-wrap">${barcodeSvg}</div>
+          <div class="logo"><img src="${logoSrc}" alt="logo" /></div>
+          <div class="info">
+            <p>العميل: ${o.customers?.name || "-"}</p>
+            <p>الهاتف: ${o.customers?.phone || "-"}</p>
+            <p>المندوب: ${o.delivery_agents?.name || "-"}</p>
+            <p>المدينة: ${o.governorates?.name || "-"}</p>
+            <p class="amount">المبلغ: ${total.toFixed(2)} ج</p>
+            <div class="barcode-wrap">${barcodeSvg}</div>
+          </div>
         </div>`;
     })
     .join("");
 
-  const w = window.open("", "_blank", "width=900,height=700");
+  const w = window.open("", "_blank", "width=800,height=900");
   if (!w) return;
-  w.document.write(buildHtml(`<div class="grid">${rows}</div>`));
+  w.document.write(buildHtml(`<div class="stack">${rows}</div>`));
   w.document.close();
 
   if (opts?.markPrinted) {
