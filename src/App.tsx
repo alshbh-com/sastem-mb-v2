@@ -63,6 +63,7 @@ const App = () => (
                 <Route path="/admin/agent-orders" element={<AdminRoute><AgentOrders /></AdminRoute>} />
                 <Route path="/admin/statistics" element={<AdminRoute><Statistics /></AdminRoute>} />
                 <Route path="/admin/invoices" element={<AdminRoute><Invoices /></AdminRoute>} />
+                <Route path="/admin/locked-invoices" element={<AdminRoute><LockedInvoices /></AdminRoute>} />
                 <Route path="/admin/governorates" element={<AdminRoute><Governorates /></AdminRoute>} />
                 <Route path="/admin/all-orders" element={<AdminRoute><AllOrders /></AdminRoute>} />
                 <Route path="/admin/reset-data" element={<AdminRoute><ResetData /></AdminRoute>} />
