@@ -92,67 +92,25 @@ const toDataUrl = async (url: string): Promise<string> => {
   }
 };
 
-const getItemInfo = (item: any) => {
-  let name = item?.products?.name as string | undefined;
-  let size = item?.size as string | undefined;
-  let color = item?.color as string | undefined;
-  if (!name && item?.product_details) {
-    try {
-      const d =
-        typeof item.product_details === "string"
-          ? JSON.parse(item.product_details)
-          : item.product_details;
-      name = d?.name || d?.product_name || name;
-      size = size || d?.size;
-      color = color || d?.color;
-    } catch {
-      if (typeof item.product_details === "string") name = item.product_details;
-    }
-  }
-  return { name: name || "-", size: size || "-", color: color || "" };
-};
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 const buildInvoice = (o: OrderLike, logoSrc: string, barcodeSvg: string, code: string) => {
   const total =
     parseFloat(String(o.total_amount || 0)) +
     parseFloat(String(o.shipping_cost || 0));
 
-  const items = o.order_items || [];
-  const productLines = items.length
-    ? items
-        .map((it) => {
-          const info = getItemInfo(it);
-          const qty = it.quantity || 1;
-          const qtyTxt = qty > 1 ? ` × ${qty}` : "";
-          return `${info.name}${qtyTxt}`;
-        })
-        .join(" - ")
-    : "-";
-  const sizes = items
-    .map((it) => getItemInfo(it).size)
-    .filter((s) => s && s !== "-")
-    .join("، ") || "-";
-
-  const gov = o.governorates?.name || o.customers?.governorate || "-";
-  const phone =
-    (o.customers?.phone || "-") +
-    (o.customers?.phone2 ? ` / ${o.customers?.phone2}` : "");
+  const details = (o.order_details || o.notes || "").trim();
+  const detailsHtml = details
+    ? `<div class="details">${escapeHtml(details).replace(/\n/g, "<br/>")}</div>`
+    : "";
 
   return `
     <div class="invoice">
       <div class="logo-wrap"><img src="${logoSrc}" alt="logo" /></div>
 
-      <div class="field"><b>الاسم:</b> ${o.customers?.name || "-"}</div>
-      <div class="row2">
-        <div class="field"><b>المحافظة:</b> ${gov}</div>
-        <div class="field"><b>الهاتف:</b> ${phone}</div>
-      </div>
-      <div class="field"><b>العنوان:</b> ${o.customers?.address || "-"}</div>
-      <div class="field"><b>المنتج:</b> ${productLines}</div>
-      <div class="row2">
-        <div class="field"><b>المقاس:</b> ${sizes}</div>
-        <div class="field"><b>كود الطلب:</b> ${code}</div>
-      </div>
+      ${detailsHtml}
+
       <div class="total">الإجمالي: ${total.toFixed(2)} ج.م</div>
 
       <div class="barcode-wrap">
