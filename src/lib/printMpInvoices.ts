@@ -157,13 +157,8 @@ export const printMpInvoices = async (
     return buildInvoice(o, logoSrc, barcodeSvg, code);
   });
 
-  // Group into sheets of 2 (side by side on A4 landscape)
-  const sheets: string[] = [];
-  for (let i = 0; i < cells.length; i += 2) {
-    const pair = cells.slice(i, i + 2);
-    if (pair.length === 1) pair.push('<div></div>');
-    sheets.push(`<div class="sheet">${pair.join("")}</div>`);
-  }
+  // Each order: 2 copies side by side on the same sheet
+  const sheets = cells.map((cell) => `<div class="sheet">${cell}${cell}</div>`);
 
   const w = window.open("", "_blank", "width=1000,height=800");
   if (!w) return;
