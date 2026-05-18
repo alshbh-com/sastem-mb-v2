@@ -9,23 +9,8 @@ interface OrderLike {
   barcode_value?: string | null;
   total_amount: number | string;
   shipping_cost?: number | string | null;
-  customers?: {
-    name?: string | null;
-    phone?: string | null;
-    phone2?: string | null;
-    address?: string | null;
-    governorate?: string | null;
-  } | null;
-  governorates?: { name?: string | null } | null;
-  delivery_agents?: { name?: string | null } | null;
-  order_items?: Array<{
-    quantity?: number | null;
-    size?: string | null;
-    color?: string | null;
-    price?: number | string | null;
-    product_details?: any;
-    products?: { name?: string | null } | null;
-  }> | null;
+  notes?: string | null;
+  order_details?: string | null;
 }
 
 const buildHtml = (body: string) => `<!DOCTYPE html>
