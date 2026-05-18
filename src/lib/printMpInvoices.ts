@@ -59,7 +59,7 @@ const buildHtml = (body: string) => `<!DOCTYPE html>
     margin-bottom: 4mm;
   }
   .logo-wrap img {
-    max-height: 26mm;
+    max-height: 29mm;
     max-width: 60mm;
     object-fit: contain;
   }
