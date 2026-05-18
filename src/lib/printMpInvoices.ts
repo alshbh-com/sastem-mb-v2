@@ -109,7 +109,7 @@ const buildInvoice = (o: OrderLike, logoSrc: string, barcodeSvg: string, code: s
     parseFloat(String(o.total_amount || 0)) +
     parseFloat(String(o.shipping_cost || 0));
 
-  const details = (o.order_details || o.notes || "").trim();
+  const details = (o.notes || "").trim();
   const detailsHtml = details
     ? `<div class="details">${escapeHtml(details).replace(/\n/g, "<br/>")}</div>`
     : "";
